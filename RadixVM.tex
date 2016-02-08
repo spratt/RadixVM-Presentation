@@ -71,7 +71,34 @@
     \end{column}
     \begin{column}{0.7\textwidth}
       \bi
-    \item Maps a contiguous virtual address space to physical memory and disk
+    \item Maps a contiguous virtual address space to:
+      \bi
+    \item physical memory (frames)
+    \item disk (swap)
+      \ei
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Background: \texttt{malloc} and \texttt{mmap}}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      \includegraphics[scale=0.05]{./figures/Address_space.png}
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item \texttt{malloc} and \texttt{free}
+      \bi
+    \item User-level library function
+    \item Allocates/frees space in virtual memory
+    \item Often implemented using \texttt{mmap} and \texttt{munmap}
+      \ei
+    \item \texttt{mmap} and \texttt{munmap}
+      \bi
+    \item System calls
+    \item Actually allocates/frees space in virtual memory
+      \ei
       \ei
     \end{column}
   \end{columns}
@@ -89,6 +116,207 @@
   \end{center}
 \end{frame}
 
+\section{Design}
+
+\begin{frame}{Design: High-level}
+  RadixVM has 3 parts:
+  \begin{center}
+    \bi
+  \item Refcache
+  \item Radix-tree-like data structure
+  \item Targeted TLB shootdowns
+    \ei
+  \end{center}
+\end{frame}
+
+\begin{frame}{Design: Refcache}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item Counts references to memory locations
+    \item Divides time into epochs
+    \item Frees memory when a memory location is unreferenced for an entire epoch
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Background: Radix Tree}
+  \begin{center}
+    \includegraphics[scale=0.5]{./figures/Patricia_trie.png}
+    \bi
+  \item A.K.A. prefix tree
+  \item Edges labeled
+  \item Concatenation of edge labels along root$\rightarrow$node path gives a string
+  \item In OSes, usually strings of bits
+    \ei
+  \end{center}
+\end{frame}
+
+\begin{frame}{Design: RadixVM Data Structure}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item Similar to a radix-tree
+    \item Fixed-height
+    \item Each level indexed by up to 9 bits
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Background: Remote TLB Shootdowns}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      When a shared memory location is unmapped:
+      \bi
+    \item The TLB for every core is flushed
+    \item \color{red}{This is expensive!}
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Design: Targeted TLB Shootdowns}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item Store metadata on which cores may have address in TLB
+    \item Only flush TLBs on cores which may share that memory
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Design: Do we need all 3 pieces?}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item TODO
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\section{Performance}
+
+\begin{frame}{Implementation}
+  \begin{center}
+    \bi
+  \item Implemented on xv6
+    \bi
+  \item Academic OS
+  \item Based on v6 Unix
+  \item Rewritten in ANSI C for x86
+  \item \url{https://pdos.csail.mit.edu/6.828/2014/xv6.html}
+    \ei
+    \ei
+  \end{center}
+\end{frame}
+
+\begin{frame}{Application: Metis}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item MapReduce Library
+    \item Single-server
+    \item Multithreaded
+    \item Stresses concurrent \texttt{mmap}s and \texttt{pagefault}s, but not concurrent \texttt{munmap}s
+    \item Compiles on xv6 and linux
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Microbenchmark: Local}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item \texttt{mmap} a private 4KB region in shared address space
+    \item Write to every page in region
+    \item \texttt{munmap} region
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Microbenchmark: Pipeline}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item Each thread \texttt{mmap} a region
+    \item Write to every page in region
+    \item Pass region to next thread
+    \item Write to every page in passed region
+    \item \texttt{munmap} region
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Microbenchmark: Global}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item Each thread \texttt{mmap} a 64KB region within a large region of memory
+    \item All threads access all pages in random order
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Memory Overhead}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item TODO
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Summary}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+      TODO
+    \end{column}
+    \begin{column}{0.8\textwidth}
+      \bi
+    \item TODO
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
 
 % Structuring a talk is a difficult task and the following structure
 % may not be suitable. Here are some rules that apply for this
@@ -116,7 +344,9 @@
 \begin{frame}[noframenumbering]{Attribution}
 \bi
 \item Virtual memory diagram by Ehamberg (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0}) or GFDL (\url{http://www.gnu.org/copyleft/fdl.html})], via Wikimedia Commons
-\ei
+\item Address space diagram by Majenko (Own work) [CC BY-SA 4.0 (\url{http://creativecommons.org/licenses/by-sa/4.0})], via Wikimedia Commons
+  \item Patricia trie diagram by Saffles (Microsoft Visio) [GFDL (\url{http://www.gnu.org/copyleft/fdl.html}) or CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons
+  \ei
 \end{frame}
 
 \end{document}
