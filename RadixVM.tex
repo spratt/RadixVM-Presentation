@@ -2,7 +2,9 @@
 %% Winter 2016
 
 %%% BEGIN PREAMBLE
-\documentclass{beamer}
+\documentclass[aspectratio=169]{beamer}
+\usepackage{hyperref}
+\usepackage{color}
 
 %% Smart underlining -- from cdi-macros.tex
 \def\ul#1{$\underline{\smash{\hbox{#1}}}$}
@@ -23,87 +25,26 @@
 \newcommand{\bd}{\begin{description}}
 \newcommand{\ed}{\end{description}}
 
-%%\newcommand{\bf}{\begin{frame}}
-%%\newcommand{\ef}{\end{frame}}
-
-%%\title{Presentation Title}
-%%\author{Author Name}
-%%\institute{Institute, Department, etc.}
-%%\date{} % delete this line to display the current date
-
 \mode<presentation>
 {
   \usetheme{Madrid}
   \usecolortheme{beaver}
-  % or ...
-
-  %\setbeamercovered{transparent}
-  % or whatever (possibly just delete it)
 }
-
-
 \usepackage[english]{babel}
-% or whatever
-
-%%\usepackage[latin1]{inputenc}
-% or whatever
 
 \usepackage{times}
 \usepackage[T1]{fontenc}
-% Or whatever. Note that the encoding and the font should match. If T1
-% does not look nice, try deleting the line with the fontenc.
+% Note that the encoding and the font should match. If T1 does not
+% look nice, try deleting the line with the fontenc.
 
 \title{RadixVM}
-% (optional, use only with long paper titles) {Academic Speaking Skills}
-
-\subtitle
-{Scalable address spaces for multithreaded applications}
-%%{Include Only If Paper Has a Subtitle}
+\subtitle{Scalable address spaces for multithreaded applications}
 
 \author[Presented by Simon Pratt]{Austin T. Clements,\\M. Frans Kaashoek,\\Nickolai Zeldovich\\
   \vspace{2em}Presented by Simon Pratt}
-% - Give the names in the same order as the appear in the paper.
-% - Use the \inst{?} command only if the authors have different
-%   affiliation.
 
-%\institute{Cheriton School of Computer Science\\ 
-%Department of English\\ Games Institute \\[0.3cm] University of Waterloo} % (optional, but mostly needed)
-% - Use the \inst command only if there are several affiliations.
-% - Keep it simple, no one is interested in your street address.
+\date{February 12, 2016}
 
-\date{February 12, 2016} % (optional, should be abbreviation of conference name)
-% - Either use conference name or its abbreviation.
-% - Not really informative to the audience, more for people (including
-%   yourself) who are reading the slides online
-
-%%\subject{Theoretical Computer Science}
-% This is only inserted into the PDF information catalog. Can be left
-% out. 
-
-% If you have a file called "university-logo-filename.xxx", where xxx
-% is a graphic format that can be processed by latex or pdflatex,
-% resp., then you can add a logo as follows:
-
-%%\pgfdeclareimage[width=1.0cm]{logo}{uwlogo}
-%%\logo{\pgfuseimage{logo}}
-
-% Delete this, if you do not want the table of contents to pop up at
-% the beginning of each subsection:
-\AtBeginSubsection[]
-{
-  \begin{frame}<beamer>{Outline}
-   \tableofcontents[currentsection,currentsubsection]
-\end{frame}
-}
-
-
-% If you wish to uncover everything in a step-wise fashion, uncomment
-% the following command: 
-%%\beamerdefaultoverlayspecification{<+->}
-
-
-%\logo{\includegraphics[scale=0.45]{WaterlooLogo.jpg}}
-%%\usecolortheme{crane}
 
 %%% BEGIN DOCUMENT
 \begin{document}
@@ -112,9 +53,40 @@
 
 \newpage
 
-\begin{frame}{Outline}
-  \tableofcontents[pausesections]
-  % You might wish to add the option [pausesections]
+\begin{frame}{Abstract}
+  RadixVM is a virtual memory (VM) design that attempts to increase multithreaded scalability by:
+  \bi
+\item Storing VM information in a radix tree
+\item Counting references to memory addresses
+\item Reducing inter-core virtual address invalidation\\(remote TLB shootdown)
+  \ei
+\end{frame}
+
+\section{Background}
+
+\begin{frame}{Background: Virtual Memory}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+      \includegraphics[scale=0.2]{./figures/Virtual_memory.png}
+    \end{column}
+    \begin{column}{0.7\textwidth}
+      \bi
+    \item Maps a contiguous virtual address space to physical memory and disk
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Background: Linux Virtual Memory}
+  \begin{center}
+    \includegraphics[scale=0.2]{./figures/Red-black_tree.png}
+    \bi
+    \item Red-black tree
+    \item Allows the kernel to search for memory area covering a virtual address
+      \pause
+    \item \color{red}{Problem: A single lock per address space!}
+    \ei
+  \end{center}
 \end{frame}
 
 
@@ -135,45 +107,15 @@
 % - If you omit details that are vital to the proof/implementation,
 %   just say so once. Everybody will be happy with that.
 
-\section{Basics of Oral Presentations} 
-
-\begin{frame}{Why do good speaking skills matter?}
-\begin{itemize}
-\item A speech that ignited a generation.
-\item A speech that roused a country.
-\item Unfortunately the kind of bad speaking you've too often heard!
-\end{itemize}
-\end{frame}
-
-\section{Preparing the Presentation}
-
-\begin{frame}{Knowing your audience}
+\begin{frame}[noframenumbering]{References}
 \bi
-\item Why your audience is there.
-\item Background of your audience. Experts or general?
-\item What you want to convey to your audience.
+\item Linux VM info from:\\ \url{http://duartes.org/gustavo/blog/post/how-the-kernel-manages-your-memory/}
 \ei
 \end{frame}
 
-\section{Evaluating a Presentation}
-\begin{frame}{An exercise: Evaluating a talk}
+\begin{frame}[noframenumbering]{Attribution}
 \bi
-\item A sample talk will be given.
-\item You will evaluate the talk in terms of:
-  \bi
-  \item Presenter manner.
-  \item Structure of talk.
-  \item Style and content of slides.
-  \item Vocal delivery.
-  \item Overall effectiveness.
-  \ei
-\ei
-\end{frame}
-
-\begin{frame}{A final word: The power of good speaking skills}
-\bi
-\item
-The speech that made a President.
+\item Virtual memory diagram by Ehamberg (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0}) or GFDL (\url{http://www.gnu.org/copyleft/fdl.html})], via Wikimedia Commons
 \ei
 \end{frame}
 
