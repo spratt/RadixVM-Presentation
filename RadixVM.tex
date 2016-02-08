@@ -129,6 +129,22 @@
   \end{center}
 \end{frame}
 
+\begin{frame}{Background: ABA Problem}
+  \begin{center}
+    TODO
+    \bi
+  \item Major issue in lock-free data structures
+  \item Roughly:
+    \bi
+  \item Process $P_1$ reads value $A$ in memory location
+  \item Process $P_2$ changes the value to $B$
+  \item Process $P_2$ changes the value back to $A$
+  \item Process $P_1$ reads value $A$ in memory location again, and assumes nothing has changed
+    \ei
+    \ei
+  \end{center}
+\end{frame}
+
 \begin{frame}{Design: Refcache}
   \begin{columns}[T]
     \begin{column}{0.2\textwidth}
@@ -139,6 +155,7 @@
     \item Counts references to memory locations
     \item Divides time into epochs
     \item Frees memory when a memory location is unreferenced for an entire epoch
+    \item Solves the ABA problem
       \ei
     \end{column}
   \end{columns}
@@ -293,16 +310,30 @@
 \end{frame}
 
 \begin{frame}{Memory Overhead}
-  \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
-    \end{column}
-    \begin{column}{0.8\textwidth}
-      \bi
-    \item TODO
-      \ei
-    \end{column}
-  \end{columns}
+  \begin{center}
+    \begin{tabular}{ l | c | c c | c }
+              &        & \multicolumn{2}{c|}{Linux} & Radix tree \\
+              & RSS    & VMA tree & Page table      & (rel. to Linux) \\
+      \hline
+      Firefox & 352 MB & 117 KB   & 1.5 MB          & 3.9 MB (2.4$\times$) \\
+      Chrome  & 152 MB & 124 KB   & 1.1 MB          & 2.4 MB (2.0$\times$) \\
+      Apache  & 16 MB  & 44 KB    & 368 KB          & 616 KB (1.5$\times$) \\
+      MySQL   & 84 MB  & 18 KB    & 348 KB          & 980 KB (2.7$\times$) \\
+    \end{tabular}
+    \vspace{1em}
+    \bi
+  \item RSS
+    \bi
+  \item Resident Set Size
+  \item physical memory used by a process
+    \ei
+  \item VMA
+    \bi
+  \item Virtual Memory Areas
+  \item stored in a red-black tree in Linux
+    \ei
+    \ei
+  \end{center}
 \end{frame}
 
 \begin{frame}{Summary}
