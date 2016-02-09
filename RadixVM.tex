@@ -31,6 +31,7 @@
 \mode<presentation>
 {
   \usetheme{Madrid}
+  \useinnertheme{circles}
   \usecolortheme{beaver}
 }
 \usepackage[english]{babel}
@@ -132,14 +133,23 @@
 \section{Design}
 
 \begin{frame}{Design: High-level}
-  RadixVM has 3 parts:
-  \begin{center}
-    \bi
-  \item Refcache
-  \item Radix-tree-like data structure
-  \item Targeted TLB shootdowns
-    \ei
-  \end{center}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      RadixVM has 3 parts:
+      \bi
+      \pause
+    \item {\color<5>{red}Refcache}
+      \pause
+    \item Radix-tree-like data structure
+      \pause
+    \item Targeted TLB shootdowns
+      \ei
+    \end{column}
+    \begin{column}{0.3\textwidth}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Background: ABA Problem}
@@ -172,6 +182,23 @@
     \item Ref. count zero for an entire epoch $\rightarrow$ free
     \item Solves the ABA problem
       \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Design: High-level}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      RadixVM has 3 parts:
+      \bi
+    \item Refcache
+    \item {\color<2>{red}Radix-tree-like data structure}
+    \item Targeted TLB shootdowns
+      \ei
+    \end{column}
+    \begin{column}{0.3\textwidth}
     \end{column}
   \end{columns}
 \end{frame}
@@ -213,6 +240,23 @@
   \end{columns}
 \end{frame}
 
+\begin{frame}{Design: High-level}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      RadixVM has 3 parts:
+      \bi
+    \item Refcache
+    \item Radix-tree-like data structure
+    \item {\color<2>{red}Targeted TLB shootdowns}
+      \ei
+    \end{column}
+    \begin{column}{0.3\textwidth}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 \begin{frame}{Background: Remote TLB Shootdowns}
   \begin{columns}[T]
     \begin{column}{0.2\textwidth}
@@ -222,6 +266,7 @@
       When a shared memory location is unmapped:
       \bi
     \item The TLB for every core is flushed
+      \pause
     \item \color{red}{This is expensive!}
       \ei
     \end{column}
