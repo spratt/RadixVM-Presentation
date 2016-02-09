@@ -10,11 +10,14 @@
 \def\ul#1{$\underline{\smash{\hbox{#1}}}$}
 
 % TikZ packages (for graphs)
-%\usepackage{tkz-graph}
-%\usepackage{tkz-berge}
-%\usetikzlibrary{snakes}
+\usepackage{tkz-graph}
+\usepackage{tkz-berge}
+\usepackage{gnuplot-lua-tikz}
+\usetikzlibrary{snakes}
 
 %% Shortcuts
+
+\newcommand\vm{RadixVM}
 
 \newcommand{\bi}{\begin{itemize}}
 \newcommand{\ei}{\end{itemize}}
@@ -107,13 +110,23 @@
 \begin{frame}{Background: Linux Virtual Memory}
   \begin{center}
     \includegraphics[scale=0.2]{./figures/Red-black_tree.png}
+  \end{center}
     \bi
     \item Red-black tree
     \item Allows the kernel to search for memory area covering a virtual address
       \pause
     \item \color{red}{Problem: A single lock per address space!}
     \ei
+\end{frame}
+
+\begin{frame}{Aside: Psearchy}
+  \begin{center}
+    \includegraphics[scale=0.2]{./figures/Red-black_tree.png}
   \end{center}
+    \bi
+  \item {\color{red}A single lock on this structure} $\rightarrow$ \texttt{mmap} within a single process is serialized
+    \item This is probably why the prwlock paper notes that Psearchy is \texttt{mmap}-intensive
+    \ei
 \end{frame}
 
 \section{Design}
@@ -146,15 +159,17 @@
 \end{frame}
 
 \begin{frame}{Design: Refcache}
+  \begin{center}
+  \includegraphics[scale=0.9]{./figures/refcache.pdf}
+  \end{center}
   \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
+    \begin{column}{0.4\textwidth}
     \end{column}
-    \begin{column}{0.8\textwidth}
+    \begin{column}{0.6\textwidth}
       \bi
     \item Counts references to memory locations
     \item Divides time into epochs
-    \item Frees memory when a memory location is unreferenced for an entire epoch
+    \item Ref. count zero for an entire epoch $\rightarrow$ free
     \item Solves the ABA problem
       \ei
     \end{column}
@@ -162,28 +177,38 @@
 \end{frame}
 
 \begin{frame}{Background: Radix Tree}
-  \begin{center}
-    \includegraphics[scale=0.5]{./figures/Patricia_trie.png}
-    \bi
-  \item A.K.A. prefix tree
-  \item Edges labeled
-  \item Concatenation of edge labels along root$\rightarrow$node path gives a string
-  \item In OSes, usually strings of bits
-    \ei
-  \end{center}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \includegraphics[scale=0.6]{./figures/Patricia_trie.png}
+      \end{center}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \bi
+    \item A.K.A. prefix tree
+    \item Edges labeled
+    \item Concatenation of edge labels along root$\rightarrow$node path gives a string
+    \item In OSes, usually strings of bits
+      \ei
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Design: RadixVM Data Structure}
+  \begin{center}
+  \includegraphics[scale=1.5]{./figures/radix.pdf}
+  \end{center}
   \begin{columns}[T]
     \begin{column}{0.2\textwidth}
-      TODO
     \end{column}
-    \begin{column}{0.8\textwidth}
+    \begin{column}{0.6\textwidth}
       \bi
     \item Similar to a radix-tree
     \item Fixed-height
     \item Each level indexed by up to 9 bits
       \ei
+    \end{column}
+    \begin{column}{0.2\textwidth}
     \end{column}
   \end{columns}
 \end{frame}
@@ -248,10 +273,10 @@
 
 \begin{frame}{Application: Metis}
   \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
+    \begin{column}{0.5\textwidth}
+      \input{graph/wrmem.tex}
     \end{column}
-    \begin{column}{0.8\textwidth}
+    \begin{column}{0.5\textwidth}
       \bi
     \item MapReduce Library
     \item Single-server
@@ -265,10 +290,10 @@
 
 \begin{frame}{Microbenchmark: Local}
   \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
+    \begin{column}{0.5\textwidth}
+      \input{graph/local-tput.tex}
     \end{column}
-    \begin{column}{0.8\textwidth}
+    \begin{column}{0.5\textwidth}
       \bi
     \item \texttt{mmap} a private 4KB region in shared address space
     \item Write to every page in region
@@ -280,10 +305,10 @@
 
 \begin{frame}{Microbenchmark: Pipeline}
   \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
+    \begin{column}{0.5\textwidth}
+      \input{graph/pipeline-tput.tex}
     \end{column}
-    \begin{column}{0.8\textwidth}
+    \begin{column}{0.5\textwidth}
       \bi
     \item Each thread \texttt{mmap} a region
     \item Write to every page in region
@@ -297,10 +322,10 @@
 
 \begin{frame}{Microbenchmark: Global}
   \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
+    \begin{column}{0.5\textwidth}
+      \input{graph/global-tput.tex}
     \end{column}
-    \begin{column}{0.8\textwidth}
+    \begin{column}{0.5\textwidth}
       \bi
     \item Each thread \texttt{mmap} a 64KB region within a large region of memory
     \item All threads access all pages in random order
@@ -376,6 +401,7 @@
 
 \begin{frame}[noframenumbering]{Attribution}
   \bi
+\item Refcache diagram, radix data structure diagram, and RadixVM charts used with permission by Austin Clements
 \item Virtual memory diagram by Ehamberg (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0}) or GFDL (\url{http://www.gnu.org/copyleft/fdl.html})], via Wikimedia Commons
 \item Address space diagram by Majenko (Own work) [CC BY-SA 4.0 (\url{http://creativecommons.org/licenses/by-sa/4.0})], via Wikimedia Commons
 \item Patricia trie diagram by Saffles (Microsoft Visio) [GFDL (\url{http://www.gnu.org/copyleft/fdl.html}) or CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons
