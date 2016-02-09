@@ -292,13 +292,32 @@
 
 \begin{frame}{Background: Remote TLB Shootdowns}
   \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
+    \begin{column}{0.1\textwidth}
+      \vspace{2cm}
+      \begin{tikzpicture}[node distance=1.5cm,overlay]
+        \tikzstyle{every node}=[draw]
+        % nodes 
+        \node (M) {$M$};
+        \node (P2) [above of=M] {$CPU_2$};
+        \node (P4) [below of=M] {$CPU_4$};
+        \node (P1) [left of=P2,node distance=1.5cm] {$CPU_1$};
+        \node (P3) [left of=P4,node distance=1.5cm] {$CPU_3$};
+        % edges
+        \draw<1-3> [->,snake=snake] (P1) to (M);
+        \draw<1-3> [->,snake=snake] (P3) to (M);
+        \draw<3-> [->,blue] (P1) to (P2);
+        \draw<3-> [->,blue] (P1) to (P3);
+        \draw<3-> [->,blue] (P1) to (P4);
+      \end{tikzpicture}
     \end{column}
-    \begin{column}{0.8\textwidth}
-      When a shared memory location is unmapped:
+    \begin{column}{0.5\textwidth}
       \bi
-    \item The TLB for every core is flushed
+    \item Processes on $CPU_1$ and $CPU_3$ share memory area $M$
+      \pause
+    \item A process on $CPU_1$ unmaps $M$
+      \pause
+    \item The kernel sends a message to all $CPU$ to {\color{blue}flush} their TLBs
+      \pause
       \pause
     \item \color{red}{This is expensive!}
       \ei
@@ -308,13 +327,28 @@
 
 \begin{frame}{Design: Targeted TLB Shootdowns}
   \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
+    \begin{column}{0.1\textwidth}
+      \vspace{2cm}
+      \begin{tikzpicture}[node distance=1.5cm,overlay]
+        \tikzstyle{every node}=[draw]
+        % nodes 
+        \node (M) {$M$};
+        \node (P2) [above of=M] {$CPU_2$};
+        \node (P4) [below of=M] {$CPU_4$};
+        \node (P1) [left of=P2,node distance=1.5cm] {$CPU_1$};
+        \node (P3) [left of=P4,node distance=1.5cm] {$CPU_3$};
+        % edges
+        \draw<1-2> [->,snake=snake] (P1) to (M);
+        \draw<1-2> [->,snake=snake] (P3) to (M);
+        \draw<2-> [->,blue] (P1) to (P3);
+      \end{tikzpicture}
     \end{column}
-    \begin{column}{0.8\textwidth}
+    \begin{column}{0.5\textwidth}
       \bi
     \item Store metadata on which cores may have address in TLB
-    \item Only flush TLBs on cores which may share that memory
+      \pause
+    \item Only {\color{blue}flush} TLBs on cores which may share that memory
+      \pause
       \ei
     \end{column}
   \end{columns}
@@ -350,11 +384,23 @@
 \end{frame}
 
 \begin{frame}{Background: Bonsai}
-  \begin{center}
-    \bi
-    
-    \ei
-  \end{center}
+  \begin{columns}[T]
+    \begin{column}{0.6\textwidth}
+      \begin{center}
+        \includegraphics[scale=0.2]{./figures/Binary_tree_rotation.png}
+      \end{center}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \bi
+    \item Designed by the same authors
+    \item ``Soft'' page faults happen in parallel using RCU
+    \item Uses an RCU-based balanced binary tree
+    \item Maintains bounded balance rather than strict balance\\
+      (this means fewer rotations)
+    \item Rotations construct a new subtree rather than mutate the old one
+      \ei
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Application: Metis}
@@ -497,6 +543,15 @@
 \item Virtual memory diagram by Ehamberg (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0}) or GFDL (\url{http://www.gnu.org/copyleft/fdl.html})], via Wikimedia Commons
 \item Address space diagram by Majenko (Own work) [CC BY-SA 4.0 (\url{http://creativecommons.org/licenses/by-sa/4.0})], via Wikimedia Commons
 \item Patricia trie diagram by Saffles (Microsoft Visio) [GFDL (\url{http://www.gnu.org/copyleft/fdl.html}) or CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons
+  \item Binary tree rotation diagram by Josell7 (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons
+  \ei
+\end{frame}
+
+\begin{frame}[noframenumbering]{License}
+  \bi
+\item These slides are distributed under the creative commons
+  Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
+\item See http://creativecommons.org/licenses/by-sa/4.0/ for details.
   \ei
 \end{frame}
 
