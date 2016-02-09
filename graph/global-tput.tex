@@ -187,8 +187,12 @@
 \draw[gp path] (1.348,4.277)--(1.348,0.787)--(7.305,0.787);
 \node[gp node center,rotate=-270] at (0.196,2.532) {~};
 \node[gp node center] at (4.326,0.172) {\# cores};
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SDP: Add legend
+\node[gp node left] at (2.500,4.108) {\vm}; % AL
 \gpcolor{color=gp lt color 1}
 \gpsetlinewidth{2.00}
+\draw[gp path] (1.495,4.108)--(2.353,4.108); % AL
 \draw[gp path] (1.348,0.826)--(2.027,1.211)--(2.781,1.743)--(3.535,2.191)--(4.289,2.612)%
   --(5.043,2.939)--(5.797,3.369)--(6.551,3.699)--(7.305,4.240);
 \gpsetpointsize{6.00}
@@ -201,7 +205,12 @@
 \gppoint{gp mark 1}{(5.797,3.369)}
 \gppoint{gp mark 1}{(6.551,3.699)}
 \gppoint{gp mark 1}{(7.305,4.240)}
+\gppoint{gp mark 1}{(1.924,4.108)} % AL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\gpcolor{color=gp lt color border} % AL
+\node[gp node left] at (2.500,3.771) {Bonsai}; % AL
 \gpcolor{color=gp lt color 2}
+\draw[gp path] (1.495,3.771)--(2.353,3.771); % AL
 \draw[gp path] (1.348,0.866)--(2.027,0.850)--(2.781,0.823)--(3.535,0.813)--(4.289,0.815)%
   --(5.043,0.822)--(5.797,0.824)--(6.551,0.818)--(7.305,0.818);
 \gppoint{gp mark 8}{(1.348,0.866)}
@@ -213,7 +222,12 @@
 \gppoint{gp mark 8}{(5.797,0.824)}
 \gppoint{gp mark 8}{(6.551,0.818)}
 \gppoint{gp mark 8}{(7.305,0.818)}
+\gppoint{gp mark 8}{(1.924,3.771)} % AL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\gpcolor{color=gp lt color border} % AL
+\node[gp node left] at (2.500,3.434) {Linux}; % AL
 \gpcolor{color=gp lt color 0}
+\draw[gp path] (1.495,3.434)--(2.353,3.434); % AL
 \draw[gp path] (1.348,0.875)--(2.027,0.851)--(2.781,0.837)--(3.535,0.825)--(4.289,0.827)%
   --(5.043,0.840)--(5.797,0.839)--(6.551,0.835)--(7.305,0.835);
 \gppoint{gp mark 2}{(1.348,0.875)}
@@ -225,6 +239,7 @@
 \gppoint{gp mark 2}{(5.797,0.839)}
 \gppoint{gp mark 2}{(6.551,0.835)}
 \gppoint{gp mark 2}{(7.305,0.835)}
+\gppoint{gp mark 2}{(1.924,3.434)} % AL
 %% coordinates of the plot area
 \gpdefrectangularnode{gp plot 1}{\pgfpoint{1.348cm}{0.787cm}}{\pgfpoint{7.305cm}{4.277cm}}
 \end{tikzpicture}
