@@ -14,6 +14,7 @@
 \usepackage{tkz-berge}
 \usepackage{gnuplot-lua-tikz}
 \usetikzlibrary{snakes}
+\usetikzlibrary{backgrounds}
 
 %% Shortcuts
 
@@ -154,7 +155,18 @@
 
 \begin{frame}{Background: ABA Problem}
   \begin{center}
-    TODO
+    \begin{tikzpicture}[node distance=1cm,framed,background rectangle/.style={draw=red}]]
+      \tikzstyle{every node}=[draw]
+      \node (A) {A};
+      \node (head) [above left of=A,node distance=2cm] {head};
+      \node (B) [right of=A] {B};
+      \node (C) [right of=B] {C};
+      \node (null) [right of=C] {null};
+      \draw [->,snake=snake] (head) to (A);
+      \draw [->] (A) to (B);
+      \draw [->] (B) to (C);
+      \draw [->] (C) to (null);
+    \end{tikzpicture}
     \bi
   \item Major issue in lock-free data structures
   \item Roughly:
