@@ -113,6 +113,29 @@
   \end{columns}
 \end{frame}
 
+% TODO:
+% - Add more details in ABA problem
+%   - memory locations important
+%   - Heart of the issue:
+%     A is freed before P_1 is done with it
+% - Add more details to Refcache
+%   - Count can be 0 at the end of an epoch, but then
+%     go up again
+% - Explain pagefault system call
+%   - explain ``soft'' page fault
+% - Add details on radix tree compression and expansion
+
+% Questions:
+% What exactly causes remote TLB invalidation?
+% How do the 3 parts fit together?
+%   Actually, mostly just:
+%   Where does Refcache fit in?
+%   Why do we need to solve reference counting for radixvm?
+% Isn't Refcache supposed to fix lock-free structures?
+%   Doesn't the radix tree have locks?
+% Can Refcache have 2 false zeroes in a row?
+%   Why not?
+
 \begin{frame}{Background: Linux Virtual Memory}
   \begin{center}
     \includegraphics[scale=0.2]{./figures/Red-black_tree.png}
@@ -121,9 +144,35 @@
     \item Red-black tree
     \item Allows the kernel to search for memory area covering a virtual address
       \pause
-    \item \color{red}{Problem: A single lock per address space!}
+    \item {\color{red}Problem: A single lock per address space!}
     \ei
 \end{frame}
+
+% 6.828 RadixVM lecture notes
+% Abstract problem: unnecesary sharing!!!
+% hence, per-core DS
+% per-core locks are inexpensive
+% One solution: no sharing
+%   - Barrelfish (multikernel)
+% Otherwise, we need stuff like RadixVM
+% Lock-free is hard (ABA problem)
+% Lock-free is not quire right:
+%   When modifying an entry, need a lock(?)
+% Anyway, need something like:
+%   - reference counting, or
+%   - garbage collection
+% Parallel reference counting is hard
+%   - locks?
+%   - atomic increments?
+% Refcache: epochs!
+%   - every core has a cache of the ref count delta
+%   - once an epoch, each core must flushes its deltas
+% Challenges for parallelizing the VM:
+%   1. Reference counts (Refcache)
+%   2. Index structure (Radix tree)
+%   3. ordering between map/unmaps (TLB shootdown)
+% Goal:
+%   - mem. ops. on non-overlapping regions should be perfectly parallelizable 
 
 \begin{frame}{Aside: Psearchy}
   \begin{center}
@@ -363,7 +412,14 @@
 \begin{frame}{Implementation}
   \begin{center}
     \bi
-  \item Implemented on xv6
+  \item Implemented on sv6
+    \bi
+  \item Based on xv6
+  \item Largely rewritten in C++
+  \item \url{https://github.com/aclements/sv6}
+    \ei
+    \vspace{1em}
+  \item xv6
     \bi
   \item Academic OS
   \item Based on v6 Unix
@@ -599,6 +655,8 @@
   \bi
 \item Revised version: \url{https://pdos.csail.mit.edu/papers/radixvm:eurosys13-2014-08-05.pdf}
   \ei
+\item 6.828 Lecture on RadixVM:\\
+  \url{https://www.youtube.com/watch?v=qlg7jqBtR4c}
 \item Clements, Austin T., M. Frans Kaashoek, and Nickolai Zeldovich. "Scalable address spaces using RCU balanced trees." \emph{ACM SIGPLAN Notices} 47, no. 4 (2012): 199-210.
   \bi
 \item Available online: \url{https://pdos.csail.mit.edu/papers/rcuvm:asplos12.pdf}
