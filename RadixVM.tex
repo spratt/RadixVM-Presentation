@@ -478,14 +478,14 @@
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
       \begin{center}
+        Skip lists\\
         \input{graph/skip.tex}
-        Skip lists
       \end{center}
     \end{column}
     \begin{column}{0.5\textwidth}
       \begin{center}
+        Radix trees\\
         \input{graph/radix.tex}
-        Radix trees
       \end{center}
     \end{column}
   \end{columns}
@@ -493,28 +493,29 @@
 
 \begin{frame}{Question: Do we need Refcache?}
   \begin{center}
+    Page sharing throughput\\
     \input{graph/counters.tex}
   \end{center}
 \end{frame}
 
 \begin{frame}{Question: Do we need targeted TLB shootdown?}
   \begin{center}
-    \input{graph/local-tlb.tex}\\
-    Local microbenchmark, per-core versus shared
+    Local microbenchmark, per-core versus shared\\
+    \input{graph/local-tlb.tex}
   \end{center}
 \end{frame}
 
 \begin{frame}{Question: Do we need targeted TLB shootdown?}
   \begin{center}
-    \input{graph/pipeline-tlb.tex}\\
-    Pipeline microbenchmark, per-core versus shared
+    Pipeline microbenchmark, per-core versus shared\\
+    \input{graph/pipeline-tlb.tex}
   \end{center}
 \end{frame}
 
 \begin{frame}{Question: Do we need targeted TLB shootdown?}
   \begin{center}
-    \input{graph/global-tlb.tex}\\
-    Global microbenchmark, per-core versus shared
+    Global microbenchmark, per-core versus shared\\
+    \input{graph/global-tlb.tex}
   \end{center}
 \end{frame}
 
@@ -547,13 +548,30 @@
 
 \begin{frame}{Summary}
   \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        Metis performance\\
+        \input{graph/wrmem.tex}
+      \end{center}
     \end{column}
-    \begin{column}{0.8\textwidth}
+    \begin{column}{0.5\textwidth}
       \bi
-    \item TODO
+    \item {\color{green}Good}: Scales well on
+      \bi
+    \item Metis, real-world application
+    \item Microbenchmarks
       \ei
+    \item {\color{red}Bad}: Increased memory overhead
+      \ei
+    \begin{tabular}{ l | c | c | c }
+              &        &         & Radix tree \\
+              & RSS    & Linux   & (rel. to Linux) \\
+      \hline
+      Firefox & 352 MB & 1.5 MB  & 3.9 MB (2.4$\times$) \\
+      Chrome  & 152 MB & 1.1 MB  & 2.4 MB (2.0$\times$) \\
+      Apache  & 16 MB  & 368 KB  & 616 KB (1.5$\times$) \\
+      MySQL   & 84 MB  & 348 KB  & 980 KB (2.7$\times$) \\
+    \end{tabular}
     \end{column}
   \end{columns}
 \end{frame}
