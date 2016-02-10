@@ -5,6 +5,7 @@
 \documentclass[aspectratio=169]{beamer}
 \usepackage{hyperref}
 \usepackage{color}
+\usepackage{multirow}
 
 %% Smart underlining -- from cdi-macros.tex
 \def\ul#1{$\underline{\smash{\hbox{#1}}}$}
@@ -18,7 +19,10 @@
 
 %% Shortcuts
 
+\newcommand{\tabitem}{~~\llap{\textbullet}~~}
+
 \newcommand\vm{RadixVM}
+\newcommand\refcache{Refcache}
 
 \newcommand{\bi}{\begin{itemize}}
 \newcommand{\ei}{\end{itemize}}
@@ -354,19 +358,6 @@
   \end{columns}
 \end{frame}
 
-\begin{frame}{Design: Do we need all 3 pieces?}
-  \begin{columns}[T]
-    \begin{column}{0.2\textwidth}
-      TODO
-    \end{column}
-    \begin{column}{0.8\textwidth}
-      \bi
-    \item TODO
-      \ei
-    \end{column}
-  \end{columns}
-\end{frame}
-
 \section{Evaluation}
 
 \begin{frame}{Implementation}
@@ -464,6 +455,67 @@
       \ei
     \end{column}
   \end{columns}
+\end{frame}
+
+\begin{frame}{Question}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      Do we really need all 3 pieces?
+      \bi
+    \item Radix trees
+    \item Refcache
+    \item Targeted TLB shootdown
+      \ei
+    \end{column}
+    \begin{column}{0.3\textwidth}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Question: Do we need radix trees?}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \input{graph/skip.tex}
+        Skip lists
+      \end{center}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{center}
+        \input{graph/radix.tex}
+        Radix trees
+      \end{center}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Question: Do we need Refcache?}
+  \begin{center}
+    \input{graph/counters.tex}
+  \end{center}
+\end{frame}
+
+\begin{frame}{Question: Do we need targeted TLB shootdown?}
+  \begin{center}
+    \input{graph/local-tlb.tex}\\
+    Local microbenchmark, per-core versus shared
+  \end{center}
+\end{frame}
+
+\begin{frame}{Question: Do we need targeted TLB shootdown?}
+  \begin{center}
+    \input{graph/pipeline-tlb.tex}\\
+    Pipeline microbenchmark, per-core versus shared
+  \end{center}
+\end{frame}
+
+\begin{frame}{Question: Do we need targeted TLB shootdown?}
+  \begin{center}
+    \input{graph/global-tlb.tex}\\
+    Global microbenchmark, per-core versus shared
+  \end{center}
 \end{frame}
 
 \begin{frame}{Memory Overhead}
