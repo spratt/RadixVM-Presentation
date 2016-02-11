@@ -66,7 +66,9 @@
   RadixVM is a virtual memory (VM) design that attempts to increase multithreaded scalability by:
   \bi
 \item Storing VM information in a radix tree
+  \pause
 \item Counting references to memory addresses
+  \pause
 \item Reducing inter-core virtual address invalidation\\(remote TLB shootdown)
   \ei
 \end{frame}
@@ -84,6 +86,12 @@
       \bi
     \item physical memory (frames)
     \item disk (swap)
+      \ei
+    \item Translation Lookaside Buffer (TLB): hardware that caches virtual to physical address mappings
+    \item Virtual address not in TLB $\rightarrow$ page fault
+      \bi
+    \item ``Soft'' page fault: page loaded in memory
+    \item ``Hard'' page fault: page swapped out, must be loaded into memory
       \ei
       \ei
     \end{column}
@@ -234,19 +242,22 @@
     \end{column}
     \begin{column}{0.6\textwidth}
       \bi
-    \item Process $P_1$ reads values $A,B$ in order to pop $A$
+    \item Process $P_1$ reads value at $A$ in order to pop $A$
       \pause
     \item $P_1$ is preempted
       \pause
-    \item $P_2$ pops $A$, sets head to $B$
+    \item $P_2$ pops (and frees) $A$, sets head to $B$
       \pause
     \item $P_2$ pops $B$, sets head to $C$
       \pause
     \item $P_2$ pushes $A$, sets head to $A$
+      \bi
+    \item Important: this new $A$ has the same location as the old $A$
+      \ei
       \pause
     \item $P_2$ is preempted
       \pause
-    \item $P_1$ reads value $A$, assumes nothing has changed
+    \item $P_1$ sees head still points to $A$, assumes nothing has changed
       \pause
     \item {\color{red}$P_1$ pops $A$, sets head to $B$}
       \ei
@@ -264,8 +275,15 @@
     \begin{column}{0.6\textwidth}
       \bi
     \item Counts references to memory locations
+      \bi
+      \pause
+    \item Per-core lazy counting
+      \ei
+      \pause
     \item Divides time into epochs
+      \pause
     \item Ref. count zero for an entire epoch $\rightarrow$ free
+      \pause
     \item Solves the ABA problem
       \ei
     \end{column}
@@ -316,9 +334,11 @@
     \end{column}
     \begin{column}{0.6\textwidth}
       \bi
-    \item Similar to a radix-tree
+    \item Similar to a radix-tree/page table
+    \item Really more of an implicit tree
     \item Fixed-height
     \item Each level indexed by up to 9 bits
+    \item No balancing needed
       \ei
     \end{column}
     \begin{column}{0.2\textwidth}
@@ -412,19 +432,23 @@
 \begin{frame}{Implementation}
   \begin{center}
     \bi
-  \item Implemented on sv6
+  \item \emph{Not} implemented on Linux
     \bi
-  \item Based on xv6
-  \item Largely rewritten in C++
-  \item \url{https://github.com/aclements/sv6}
+    \pause
+  \item Too complicated
     \ei
     \vspace{1em}
-  \item xv6
+    \pause
+  \item Implemented on sv6
+    \bi
+    \pause
+  \item Based on xv6
     \bi
   \item Academic OS
   \item Based on v6 Unix
-  \item Rewritten in ANSI C for x86
-  \item \url{https://pdos.csail.mit.edu/6.828/2014/xv6.html}
+    \ei
+  \item Largely rewritten in C++
+  \item \url{https://github.com/aclements/sv6}
     \ei
     \ei
   \end{center}
@@ -461,7 +485,7 @@
     \item Single-server
     \item Multithreaded
     \item Stresses concurrent \texttt{mmap}s and \texttt{pagefault}s, but not concurrent \texttt{munmap}s
-    \item Compiles on xv6 and linux
+    \item Compiles on sv6 and linux
       \ei
     \end{column}
   \end{columns}
