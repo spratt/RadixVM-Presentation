@@ -60,32 +60,34 @@
 
 \frame[plain]{\titlepage}
 
-\newpage
-
-\section{Background}
-
-\begin{frame}{Background: Virtual Memory}
+\begin{frame}{Abstract}
   \begin{columns}[T]
     \begin{column}{0.3\textwidth}
-      \includegraphics[scale=0.2]{./figures/Virtual_memory.png}
     \end{column}
-    \begin{column}{0.7\textwidth}
-      \bi
-    \item Maps a contiguous virtual address space to:
-      \bi
-    \item physical memory (frames)
-    \item disk (swap)
-      \ei
-    \item Translation Lookaside Buffer (TLB): hardware that caches virtual to physical address mappings
-    \item Virtual address not in TLB $\rightarrow$ page fault
-      \bi
-    \item ``Soft'' page fault: page loaded in memory
-    \item ``Hard'' page fault: page swapped out, must be loaded into memory
-      \ei
-      \ei
+    \begin{column}{0.4\textwidth}
+      RadixVM solves 2 problems:
+      \bn
+      \pause
+    \item Multithreaded address space scaling
+      \bn
+      \pause
+    \item (And reference counting)
+      \en
+      \pause
+    \item Remote TLB shootdown
+      \en
+      \vspace{2em}
+      \pause
+      But first, some background...
+    \end{column}
+    \begin{column}{0.3\textwidth}
     \end{column}
   \end{columns}
 \end{frame}
+
+\newpage
+
+\section{Background}
 
 \begin{frame}{Background: \texttt{malloc} and \texttt{mmap}}
   \begin{columns}[T]
@@ -100,11 +102,61 @@
     \item Allocates/frees space in virtual memory
     \item Often implemented using \texttt{mmap} and \texttt{munmap}
       \ei
+      \pause
     \item \texttt{mmap} and \texttt{munmap}
       \bi
     \item System calls
     \item Actually allocates/frees space in virtual memory
       \ei
+      \pause
+    \item So what is virtual memory?
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Background: Virtual Memory}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+      \includegraphics[scale=0.2]{./figures/Virtual_memory.png}
+    \end{column}
+    \begin{column}{0.7\textwidth}
+      \bi
+    \item (on x86) Instructions operate on virtual addresses
+      \pause
+    \item Data may be stored:
+      \bi
+    \item In physical memory
+    \item On disk
+      \ei
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Background: Virtual Memory}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[scale=0.2]{./figures/MMU.png}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \vspace{5em}
+      \bi
+    \item Hardware, memory management unit (MMU)
+      \bi
+    \item Performs the translation
+    \item Keeps a cache (TLB) of\\virtual $\rightarrow$ physical mappings
+    \item No entry in TLB $\rightarrow$ page fault
+      \ei
+      \pause
+    \item Operating system
+      \bi
+    \item Maintains the mapping (per process)
+    \item Handles page faults
+      \ei
+      \pause
+    \item So how does the OS store this?
       \ei
     \end{column}
   \end{columns}
@@ -171,130 +223,37 @@
 % Goal:
 %   - mem. ops. on non-overlapping regions should be perfectly parallelizable 
 
-\begin{frame}{Aside: Psearchy}
+\begin{frame}{Problem 1: Multithreaded Address Space Scaling}
   \begin{center}
     \includegraphics[scale=0.2]{./figures/Red-black_tree.png}
   \end{center}
     \bi
   \item {\color{red}A single lock on this structure} $\rightarrow$ \texttt{mmap} within a single process is serialized
-    \item This is probably why the prwlock paper notes that Psearchy is \texttt{mmap}-intensive
+    \pause
+    \item Aside: prwlock paper notes that Psearchy is \texttt{mmap}-intensive
     \ei
 \end{frame}
 
+\begin{frame}{Abstract}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      RadixVM solves 2 problems:
+      \bn
+    \item {\color<2>{red}Multithreaded address space scaling}
+      \bn
+    \item (And reference counting)
+      \en
+    \item Remote TLB shootdown
+      \en
+    \end{column}
+    \begin{column}{0.3\textwidth}
+    \end{column}
+  \end{columns}
+\end{frame}
+
 \section{Design}
-
-\begin{frame}{Design: High-level}
-  \begin{columns}[T]
-    \begin{column}{0.3\textwidth}
-    \end{column}
-    \begin{column}{0.4\textwidth}
-      RadixVM has 3 parts:
-      \bi
-      \pause
-    \item {\color<5>{red}Refcache}
-      \pause
-    \item Radix-tree-like data structure
-      \pause
-    \item Targeted TLB shootdowns
-      \ei
-    \end{column}
-    \begin{column}{0.3\textwidth}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Background: ABA Problem}
-  \begin{columns}[T]
-    \begin{column}{0.1\textwidth}
-        \vspace{2cm}
-        \begin{tikzpicture}[node distance=1cm,overlay]
-          \tikzstyle{every node}=[draw]
-          % nodes 
-          \node<1-2> (A) {A};
-          \node (head) [above of=A,node distance=2cm] {head};
-          \node<1-3> (B) [right of=A] {B};
-          \node (C) [right of=B] {C};
-          \node (null) [right of=C] {null};
-          \node<5-7> (A2) {A};
-          \node<8-> (B2) [right of=A,red] {B};
-          % edges
-          \draw<1-2> [->,snake=snake] (head) to (A);
-          \draw<3> [->,snake=snake] (head) to (B);
-          \draw<4> [->,snake=snake] (head) to (C);
-          \draw<5-7> [->,snake=snake] (head) to (A2);
-          \draw<8-> [->,snake=snake] (head) to (B2);
-          \draw<1-2> [->] (A) to (B);
-          \draw<1-3> [->] (B) to (C);
-          \draw<5-7> [->] (A2) to (C);
-          \draw [->] (C) to (null);
-        \end{tikzpicture}
-    \end{column}
-    \begin{column}{0.6\textwidth}
-      \bi
-    \item Process $P_1$ reads value at $A$ in order to pop $A$
-      \pause
-    \item $P_1$ is preempted
-      \pause
-    \item $P_2$ pops (and frees) $A$, sets head to $B$
-      \pause
-    \item $P_2$ pops $B$, sets head to $C$
-      \pause
-    \item $P_2$ pushes $A$, sets head to $A$
-      \bi
-    \item Important: this new $A$ has the same location as the old $A$
-      \ei
-      \pause
-    \item $P_2$ is preempted
-      \pause
-    \item $P_1$ sees head still points to $A$, assumes nothing has changed
-      \pause
-    \item {\color{red}$P_1$ pops $A$, sets head to $B$}
-      \ei
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Design: Refcache}
-  \begin{center}
-  \includegraphics[scale=0.9]{./figures/refcache.pdf}
-  \end{center}
-  \begin{columns}[T]
-    \begin{column}{0.4\textwidth}
-    \end{column}
-    \begin{column}{0.6\textwidth}
-      \bi
-    \item Counts references to memory locations
-      \bi
-      \pause
-    \item Per-core lazy counting
-      \ei
-      \pause
-    \item Divides time into epochs
-      \pause
-    \item Ref. count zero for an entire epoch $\rightarrow$ free
-      \pause
-    \item Solves the ABA problem
-      \ei
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Design: High-level}
-  \begin{columns}[T]
-    \begin{column}{0.3\textwidth}
-    \end{column}
-    \begin{column}{0.4\textwidth}
-      RadixVM has 3 parts:
-      \bi
-    \item Refcache
-    \item {\color<2>{red}Radix-tree-like data structure}
-    \item Targeted TLB shootdowns
-      \ei
-    \end{column}
-    \begin{column}{0.3\textwidth}
-    \end{column}
-  \end{columns}
-\end{frame}
 
 \begin{frame}{Background: Radix Tree}
   \begin{columns}[T]
@@ -306,8 +265,11 @@
     \begin{column}{0.5\textwidth}
       \bi
     \item A.K.A. prefix tree
+      \pause
     \item Edges labeled
+      \pause
     \item Concatenation of edge labels along root$\rightarrow$node path gives a string
+      \pause
     \item In OSes, usually strings of bits
       \ei
     \end{column}
@@ -323,11 +285,13 @@
     \end{column}
     \begin{column}{0.6\textwidth}
       \bi
-    \item Similar to a radix-tree/page table
-    \item Really more of an implicit tree
-    \item Fixed-height
+    \item Pretty much a page table
+      \pause
     \item Each level indexed by up to 9 bits
-    \item No balancing needed
+      \pause
+    \item Fixed-height $\rightarrow$ no balancing needed
+      \pause
+    \item Lazy expansion/collapsing
       \ei
     \end{column}
     \begin{column}{0.2\textwidth}
@@ -335,24 +299,204 @@
   \end{columns}
 \end{frame}
 
-\begin{frame}{Design: High-level}
+\begin{frame}{Design: RadixVM Data Structure}
+  \begin{center}
+  \includegraphics[scale=1.5]{./figures/radix.pdf}
+  \end{center}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \bi
+    \item Minimizes cache-line contention
+      \pause
+    \item Supports precise range locking
+      \ei
+    \end{column}
+    \begin{column}{0.2\textwidth}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Problem 1.1: When to Free}
+  \begin{center}
+  \includegraphics[scale=1.5]{./figures/radix.pdf}
+  \end{center}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \bi
+    \item How do we know when we can free the underlying pages?
+      \pause
+    \item Reference counting!
+      \ei
+    \end{column}
+    \begin{column}{0.2\textwidth}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Abstract}
   \begin{columns}[T]
     \begin{column}{0.3\textwidth}
     \end{column}
     \begin{column}{0.4\textwidth}
-      RadixVM has 3 parts:
-      \bi
-    \item Refcache
-    \item Radix-tree-like data structure
-    \item {\color<2>{red}Targeted TLB shootdowns}
-      \ei
+      RadixVM solves 2 problems:
+      \bn
+    \item Multithreaded address space scaling
+      \bn
+    \item (And {\color<2>{red}reference counting})
+      \en
+    \item Remote TLB shootdown
+      \en
     \end{column}
     \begin{column}{0.3\textwidth}
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Background: Remote TLB Shootdowns}
+%% \begin{frame}{Background: ABA Problem}
+%%   \begin{columns}[T]
+%%     \begin{column}{0.1\textwidth}
+%%         \vspace{2cm}
+%%         \begin{tikzpicture}[node distance=1cm,overlay]
+%%           \tikzstyle{every node}=[draw]
+%%           % nodes 
+%%           \node<1-2> (A) {A};
+%%           \node (head) [above of=A,node distance=2cm] {head};
+%%           \node<1-3> (B) [right of=A] {B};
+%%           \node (C) [right of=B] {C};
+%%           \node (null) [right of=C] {null};
+%%           \node<5-7> (A2) {A};
+%%           \node<8-> (B2) [right of=A,red] {B};
+%%           % edges
+%%           \draw<1-2> [->,snake=snake] (head) to (A);
+%%           \draw<3> [->,snake=snake] (head) to (B);
+%%           \draw<4> [->,snake=snake] (head) to (C);
+%%           \draw<5-7> [->,snake=snake] (head) to (A2);
+%%           \draw<8-> [->,snake=snake] (head) to (B2);
+%%           \draw<1-2> [->] (A) to (B);
+%%           \draw<1-3> [->] (B) to (C);
+%%           \draw<5-7> [->] (A2) to (C);
+%%           \draw [->] (C) to (null);
+%%         \end{tikzpicture}
+%%     \end{column}
+%%     \begin{column}{0.6\textwidth}
+%%       \bi
+%%     \item Process $P_1$ reads value at $A$ in order to pop $A$
+%%       \pause
+%%     \item $P_1$ is preempted
+%%       \pause
+%%     \item $P_2$ pops (and frees) $A$, sets head to $B$
+%%       \pause
+%%     \item $P_2$ pops $B$, sets head to $C$
+%%       \pause
+%%     \item $P_2$ pushes $A$, sets head to $A$
+%%       \bi
+%%     \item Important: this new $A$ has the same location as the old $A$
+%%       \ei
+%%       \pause
+%%     \item $P_2$ is preempted
+%%       \pause
+%%     \item $P_1$ sees head still points to $A$, assumes nothing has changed
+%%       \pause
+%%     \item {\color{red}$P_1$ pops $A$, sets head to $B$}
+%%       \ei
+%%     \end{column}
+%%   \end{columns}
+%% \end{frame}
+
+\begin{frame}{Background: Reference Counting}
+  \begin{columns}[T]
+    \begin{column}{0.1\textwidth}
+        \vspace{2cm}
+        \begin{tikzpicture}[node distance=1cm,overlay]
+          \tikzstyle{every node}=[draw]
+          % nodes
+          \node<1-8> (M) {M};
+          \node (T2) [below of=M] {$T_2$};
+          \node (T1) [left of=T2] {$T_1$};
+          \node (T3) [right of=T2] {$T_3$};
+          % edges
+          \draw<3-5> [->] (T1) to (M);
+          \draw<4-6> [->] (T2) to (M);
+          \draw<5-7> [->] (T3) to (M);
+        \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \bi
+    \item 3 operations: inc, dec, zero?
+      \pause
+      \bn
+    \item References: 0
+      \pause
+    \item inc $\rightarrow$ References: 1
+      \pause
+    \item inc $\rightarrow$ References: 2
+      \pause
+    \item inc $\rightarrow$ References: 3
+      \pause
+    \item dec $\rightarrow$ References: 2
+      \pause
+    \item dec $\rightarrow$ References: 1
+      \pause
+    \item dec $\rightarrow$ References: 0
+      \pause
+    \item zero? $\rightarrow$ Free M!
+      \en
+      \pause
+    \item But: single counter $\rightarrow$ contention
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Design: Refcache}
+  \begin{center}
+  \includegraphics[scale=0.9]{./figures/refcache.pdf}
+  \end{center}
+  \begin{columns}[T]
+    \begin{column}{0.4\textwidth}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \bi
+    \item Per-core lazy counting
+      \bi
+      \pause
+    \item Each core stores a delta
+      \pause
+    \item Delta updated lazily (blue circles)
+      \ei
+      \pause
+    \item Divides time into epochs
+      \pause
+    \item Ref. count zero for an entire epoch $\rightarrow$ free
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Abstract}
+  \begin{columns}[T]
+    \begin{column}{0.3\textwidth}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      RadixVM solves 2 problems:
+      \bn
+    \item Multithreaded address space scaling
+      \bn
+    \item (And reference counting)
+      \en
+    \item {\color<2>{red}Remote TLB shootdown}
+      \en
+    \end{column}
+    \begin{column}{0.3\textwidth}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Problem 2: Remote TLB Shootdowns}
   \begin{columns}[T]
     \begin{column}{0.1\textwidth}
       \vspace{2cm}
@@ -366,10 +510,10 @@
         \node (P3) [left of=P4,node distance=1.5cm] {$CPU_3$};
         % edges
         \draw<1-3> [->,snake=snake] (P1) to (M);
-        \draw<1-3> [->,snake=snake] (P3) to (M);
-        \draw<3-> [->,blue] (P1) to (P2);
-        \draw<3-> [->,blue] (P1) to (P3);
-        \draw<3-> [->,blue] (P1) to (P4);
+        \draw<1-6> [->,snake=snake] (P3) to (M);
+        \draw<6-> [->,blue] (P1) to (P2);
+        \draw<6-> [->,blue] (P1) to (P3);
+        \draw<6-> [->,blue] (P1) to (P4);
       \end{tikzpicture}
     \end{column}
     \begin{column}{0.5\textwidth}
@@ -377,8 +521,15 @@
     \item Processes on $CPU_1$ and $CPU_3$ share memory area $M$
       \pause
     \item A process on $CPU_1$ unmaps $M$
+      \bi
       \pause
-    \item The kernel sends a message to all $CPU$ to {\color{blue}flush} their TLBs
+    \item Flush local TLB entry
+      \pause
+      \pause
+    \item Flush remote TLB entries\\(of anyone sharing)
+      \ei
+      \pause
+    \item Linux: sends a {\color{blue}message} to all $CPU$
       \pause
       \pause
     \item \color{red}{This is expensive!}
@@ -419,25 +570,56 @@
 \section{Evaluation}
 
 \begin{frame}{Implementation}
+  \begin{columns}[T]
+    \begin{column}{0.1\textwidth}
+      \vspace{2cm}
+      \begin{tikzpicture}[node distance=1.5cm,overlay]
+        \tikzstyle{every node}=[draw]
+        % nodes 
+        \node<3-> (sv6) {sv6};
+        \node<4-> (xv6) [below of=sv6] {xv6};
+        \node<5-> (v6) [below of=xv6] {v6};
+        % edges
+        \draw<4-> [->] (sv6) to (xv6); 
+        \draw<5-> [->] (xv6) to (v6); 
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \bi
+    \item \emph{Not} implemented on Linux
+      \bi
+      \pause
+    \item Too complicated
+      \ei
+      \vspace{1em}
+      \pause
+    \item Implemented on sv6 (C++)
+      \bi
+      \pause
+    \item Based on xv6 (ANSI C)
+      \bi
+      \pause
+    \item Based on v6 Unix (K\&R C)
+      \ei
+      \pause
+    \item Academic OS
+      \pause
+    \item \url{https://github.com/aclements/sv6}
+      \ei
+      \ei
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Comparison}
   \begin{center}
     \bi
-  \item \emph{Not} implemented on Linux
+  \item Compared against:
     \bi
     \pause
-  \item Too complicated
-    \ei
-    \vspace{1em}
+  \item Default Linux
     \pause
-  \item Implemented on sv6
-    \bi
-    \pause
-  \item Based on xv6
-    \bi
-  \item Academic OS
-  \item Based on v6 Unix
-    \ei
-  \item Largely rewritten in C++
-  \item \url{https://github.com/aclements/sv6}
+  \item ``Bonsai''
     \ei
     \ei
   \end{center}
@@ -453,10 +635,12 @@
     \begin{column}{0.4\textwidth}
       \bi
     \item Designed by the same authors
-    \item ``Soft'' page faults happen in parallel using RCU
+      \pause
     \item Uses an RCU-based balanced binary tree
+      \pause
     \item Maintains bounded balance rather than strict balance\\
       (this means fewer rotations)
+      \pause
     \item Rotations construct a new subtree rather than mutate the old one
       \ei
     \end{column}
@@ -466,16 +650,19 @@
 \begin{frame}{Application: Metis}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \input{graph/wrmem.tex}
-    \end{column}
-    \begin{column}{0.5\textwidth}
       \bi
     \item MapReduce Library
+      \pause
     \item Single-server
+      \pause
     \item Multithreaded
+      \pause
     \item Stresses concurrent \texttt{mmap}s and \texttt{pagefault}s, but not concurrent \texttt{munmap}s
-    \item Compiles on sv6 and linux
       \ei
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \pause
+      \input{graph/wrmem.tex}
     \end{column}
   \end{columns}
 \end{frame}
@@ -483,14 +670,17 @@
 \begin{frame}{Microbenchmark: Local}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \input{graph/local-tput.tex}
-    \end{column}
-    \begin{column}{0.5\textwidth}
       \bi
     \item \texttt{mmap} a private 4KB region in shared address space
+      \pause
     \item Write to every page in region
+      \pause
     \item \texttt{munmap} region
       \ei
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \pause
+      \input{graph/local-tput.tex}
     \end{column}
   \end{columns}
 \end{frame}
@@ -498,16 +688,21 @@
 \begin{frame}{Microbenchmark: Pipeline}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \input{graph/pipeline-tput.tex}
-    \end{column}
-    \begin{column}{0.5\textwidth}
       \bi
     \item Each thread \texttt{mmap} a region
+      \pause
     \item Write to every page in region
+      \pause
     \item Pass region to next thread
+      \pause
     \item Write to every page in passed region
+      \pause
     \item \texttt{munmap} region
       \ei
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \pause
+      \input{graph/pipeline-tput.tex}
     \end{column}
   \end{columns}
 \end{frame}
@@ -515,13 +710,15 @@
 \begin{frame}{Microbenchmark: Global}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \input{graph/global-tput.tex}
-    \end{column}
-    \begin{column}{0.5\textwidth}
       \bi
     \item Each thread \texttt{mmap} a 64KB region within a large region of memory
+      \pause
     \item All threads access all pages in random order
       \ei
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \pause
+      \input{graph/global-tput.tex}
     \end{column}
   \end{columns}
 \end{frame}
@@ -553,6 +750,7 @@
     \end{column}
     \begin{column}{0.5\textwidth}
       \begin{center}
+        \pause
         Radix trees\\
         \input{graph/radix.tex}
       \end{center}
@@ -561,10 +759,20 @@
 \end{frame}
 
 \begin{frame}{Question: Do we need Refcache?}
-  \begin{center}
-    Page sharing throughput\\
-    \input{graph/counters.tex}
-  \end{center}
+  \begin{columns}[T]
+    \begin{column}{0.2\textwidth}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \begin{center}
+        Page sharing throughput\\
+        \input{graph/counters.tex}\\
+        \vspace{1em}
+        SNZI: Scalable Non-Zero Indicators
+    \end{center}
+    \end{column}
+    \begin{column}{0.2\textwidth}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Question: Do we need targeted TLB shootdown?}
@@ -588,7 +796,7 @@
   \end{center}
 \end{frame}
 
-\begin{frame}{Memory Overhead}
+\begin{frame}{Issue: Memory Overhead}
   \begin{center}
     \begin{tabular}{ l | c | c c | c }
               &        & \multicolumn{2}{c|}{Linux} & Radix tree \\
@@ -680,11 +888,13 @@
 
 \begin{frame}[noframenumbering]{Attribution}
   \bi
+  {\small
 \item Refcache diagram, radix data structure diagram, and RadixVM charts used with permission by Austin Clements
-\item Virtual memory diagram by Ehamberg (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0}) or GFDL (\url{http://www.gnu.org/copyleft/fdl.html})], via Wikimedia Commons
+\item Virtual memory diagram by Ehamberg (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons
+  \item MMU diagram by Mdjango, Andrew S. Tanenbaum (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons
 \item Address space diagram by Majenko (Own work) [CC BY-SA 4.0 (\url{http://creativecommons.org/licenses/by-sa/4.0})], via Wikimedia Commons
-\item Patricia trie diagram by Saffles (Microsoft Visio) [GFDL (\url{http://www.gnu.org/copyleft/fdl.html}) or CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons
-  \item Binary tree rotation diagram by Josell7 (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons
+\item Patricia trie diagram by Saffles (Microsoft Visio) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons
+  \item Binary tree rotation diagram by Josell7 (Own work) [CC BY-SA 3.0 (\url{http://creativecommons.org/licenses/by-sa/3.0})], via Wikimedia Commons}
   \ei
 \end{frame}
 
@@ -697,6 +907,3 @@
 \end{frame}
 
 \end{document}
-
-
-
