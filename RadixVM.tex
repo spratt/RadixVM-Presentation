@@ -162,29 +162,6 @@
   \end{columns}
 \end{frame}
 
-% TODO:
-% - Add more details in ABA problem
-%   - memory locations important
-%   - Heart of the issue:
-%     A is freed before P_1 is done with it
-% - Add more details to Refcache
-%   - Count can be 0 at the end of an epoch, but then
-%     go up again
-% - Explain pagefault system call
-%   - explain ``soft'' page fault
-% - Add details on radix tree compression and expansion
-
-% Questions:
-% What exactly causes remote TLB invalidation?
-% How do the 3 parts fit together?
-%   Actually, mostly just:
-%   Where does Refcache fit in?
-%   Why do we need to solve reference counting for radixvm?
-% Isn't Refcache supposed to fix lock-free structures?
-%   Doesn't the radix tree have locks?
-% Can Refcache have 2 false zeroes in a row?
-%   Why not?
-
 \begin{frame}{Background: Linux Virtual Memory}
   \begin{center}
     \includegraphics[scale=0.2]{./figures/Red-black_tree.png}
@@ -196,32 +173,6 @@
     \item {\color{red}Problem: A single lock per address space!}
     \ei
 \end{frame}
-
-% 6.828 RadixVM lecture notes
-% Abstract problem: unnecesary sharing!!!
-% hence, per-core DS
-% per-core locks are inexpensive
-% One solution: no sharing
-%   - Barrelfish (multikernel)
-% Otherwise, we need stuff like RadixVM
-% Lock-free is hard (ABA problem)
-% Lock-free is not quire right:
-%   When modifying an entry, need a lock(?)
-% Anyway, need something like:
-%   - reference counting, or
-%   - garbage collection
-% Parallel reference counting is hard
-%   - locks?
-%   - atomic increments?
-% Refcache: epochs!
-%   - every core has a cache of the ref count delta
-%   - once an epoch, each core must flushes its deltas
-% Challenges for parallelizing the VM:
-%   1. Reference counts (Refcache)
-%   2. Index structure (Radix tree)
-%   3. ordering between map/unmaps (TLB shootdown)
-% Goal:
-%   - mem. ops. on non-overlapping regions should be perfectly parallelizable 
 
 \begin{frame}{Problem 1: Multithreaded Address Space Scaling}
   \begin{center}
@@ -355,57 +306,6 @@
     \end{column}
   \end{columns}
 \end{frame}
-
-%% \begin{frame}{Background: ABA Problem}
-%%   \begin{columns}[T]
-%%     \begin{column}{0.1\textwidth}
-%%         \vspace{2cm}
-%%         \begin{tikzpicture}[node distance=1cm,overlay]
-%%           \tikzstyle{every node}=[draw]
-%%           % nodes 
-%%           \node<1-2> (A) {A};
-%%           \node (head) [above of=A,node distance=2cm] {head};
-%%           \node<1-3> (B) [right of=A] {B};
-%%           \node (C) [right of=B] {C};
-%%           \node (null) [right of=C] {null};
-%%           \node<5-7> (A2) {A};
-%%           \node<8-> (B2) [right of=A,red] {B};
-%%           % edges
-%%           \draw<1-2> [->,snake=snake] (head) to (A);
-%%           \draw<3> [->,snake=snake] (head) to (B);
-%%           \draw<4> [->,snake=snake] (head) to (C);
-%%           \draw<5-7> [->,snake=snake] (head) to (A2);
-%%           \draw<8-> [->,snake=snake] (head) to (B2);
-%%           \draw<1-2> [->] (A) to (B);
-%%           \draw<1-3> [->] (B) to (C);
-%%           \draw<5-7> [->] (A2) to (C);
-%%           \draw [->] (C) to (null);
-%%         \end{tikzpicture}
-%%     \end{column}
-%%     \begin{column}{0.6\textwidth}
-%%       \bi
-%%     \item Process $P_1$ reads value at $A$ in order to pop $A$
-%%       \pause
-%%     \item $P_1$ is preempted
-%%       \pause
-%%     \item $P_2$ pops (and frees) $A$, sets head to $B$
-%%       \pause
-%%     \item $P_2$ pops $B$, sets head to $C$
-%%       \pause
-%%     \item $P_2$ pushes $A$, sets head to $A$
-%%       \bi
-%%     \item Important: this new $A$ has the same location as the old $A$
-%%       \ei
-%%       \pause
-%%     \item $P_2$ is preempted
-%%       \pause
-%%     \item $P_1$ sees head still points to $A$, assumes nothing has changed
-%%       \pause
-%%     \item {\color{red}$P_1$ pops $A$, sets head to $B$}
-%%       \ei
-%%     \end{column}
-%%   \end{columns}
-%% \end{frame}
 
 \begin{frame}{Background: Reference Counting}
   \begin{columns}[T]
@@ -852,23 +752,6 @@
     \end{column}
   \end{columns}
 \end{frame}
-
-% Structuring a talk is a difficult task and the following structure
-% may not be suitable. Here are some rules that apply for this
-% solution: 
-
-% - Exactly two or three sections (other than the summary).
-% - At *most* three subsections per section.
-% - Talk about 30s to 2min per frame. So there should be between about
-%   15 and 30 frames, all told.
-
-% - A conference audience is likely to know very little of what you
-%   are going to talk about. So *simplify*!
-% - In a 20min talk, getting the main ideas across is hard
-%   enough. Leave out details, even if it means being less precise than
-%   you think necessary.
-% - If you omit details that are vital to the proof/implementation,
-%   just say so once. Everybody will be happy with that.
 
 \begin{frame}[noframenumbering]{References}
   \bi
